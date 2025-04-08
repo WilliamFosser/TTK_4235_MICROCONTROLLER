@@ -45,8 +45,8 @@ typedef struct {
 
 void uart_init() {
     // Configure GPIO-pins
-	GPIO->PIN_CNF[6] = 1; // Output - 3 activate input buffer 
-    GPIO->PIN_CNF[8] = 0;  // Input
+	GPIO->PIN_CNF[6] = 3; // Output - 3 activate input buffer 
+    GPIO->PIN_CNF[8] = 2;  // Input
 
     // Bruke uart
     UART->PSELTXD = 6; //Usikker på riktig kanskje bare pin number
@@ -65,6 +65,10 @@ void uart_init() {
 }
 
 void uart_send(char data){
+
+    UART->EVENTS_TXDRDY = 0;
+
+
     UART->TASKS_STARTTX = 1;
     UART->TXD = data;
 
@@ -73,20 +77,29 @@ void uart_send(char data){
 
     // Visuals
 
-    GPIO->PIN_CNF[13] = (3 << 2);
-	GPIO->PIN_CNF[14] = (3 << 2);
+    // GPIO->PIN_CNF[13] = (3 << 2);
+	// GPIO->PIN_CNF[14] = (3 << 2);
 
-    if (UART->EVENTS_TXDRDY) {
-        for(int i = 17; i <= 21; i++){
-            GPIO->DIRSET = (1 << i);
-            GPIO->OUTCLR = (1 << i);
-        }
-    }
+    // if (UART->EVENTS_TXDRDY) {
+    //     for(int i = 17; i <= 21; i++){
+    //         GPIO->DIRSET = (1 << i);
+    //         GPIO->OUTCLR = (1 << i);
+    //     }
+    // }
 
     UART->EVENTS_TXDRDY = 0;
     UART->TASKS_STOPTX = 1;
 };
 
 char uart_read() {
-    return 'A';
+    if (UART->EVENTS_RXDRDY == 1) {
+        // Clear event first
+        UART->EVENTS_RXDRDY = 0;
+
+        // Les data
+        return (char)UART->RXD;
+    }
+    else {
+        return '\0';
+    }
 };
